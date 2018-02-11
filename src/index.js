@@ -10,27 +10,25 @@ const SitemapRotator = require('./SitemapRotator');
 const createSitemapIndex = require('./createSitemapIndex');
 const extendFilename = require('./helpers/extendFilename');
 const Logger = require('./Logger');
+const discoverResources = require('./discoverResources');
 
 module.exports = function SitemapGenerator(uri, opts) {
   const defaultOpts = {
     stripQuerystring: true,
     maxEntriesPerFile: 50000,
-    crawlerMaxDepth: 0,
+    maxDepth: 0,
     filepath: path.join(process.cwd(), 'sitemap.xml'),
     userAgent: 'Node/SitemapGenerator',
+    respectRobotsTxt: true,
+    ignoreInvalidSSL: true,
+    timeout: 30000,
+    discoverResources,
+    decodeResponses: true,
   };
 
   const options = Object.assign({}, defaultOpts, opts);
 
   const { log, on, off, stats } = Logger();
-
-  let status = 'waiting';
-
-  const setStatus = newStatus => {
-    status = newStatus;
-  };
-
-  const getStatus = () => status;
 
   const getStats = () => ({
     added: stats.add || 0,
@@ -55,12 +53,10 @@ module.exports = function SitemapGenerator(uri, opts) {
   const crawler = createCrawler(parsedUrl, options);
 
   const start = () => {
-    setStatus('started');
     crawler.start();
   };
 
   const stop = () => {
-    setStatus('stopped');
     crawler.stop();
   };
 
@@ -114,7 +110,6 @@ module.exports = function SitemapGenerator(uri, opts) {
     const sitemaps = sitemap.getPaths();
 
     const cb = () => {
-      setStatus('done');
       log('done', getStats());
     };
 
@@ -160,7 +155,6 @@ module.exports = function SitemapGenerator(uri, opts) {
   return {
     getPaths,
     getStats,
-    getStatus,
     start,
     stop,
     queueURL,
